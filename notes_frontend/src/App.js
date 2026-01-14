@@ -49,7 +49,11 @@ function App() {
   const [draftBody, setDraftBody] = useState("");
   const [draftTagsText, setDraftTagsText] = useState("");
 
-  /** Save state indicators */
+  /**
+   * Save/sync state indicator.
+   * 'dirty' is local draft != selectedNote; 'saving' means a sync attempt is in-flight for the current revision;
+   * 'saved' means last sync attempt for current revision succeeded; 'error' means last sync attempt failed.
+   */
   const [saveState, setSaveState] = useState("saved"); // 'saved' | 'dirty' | 'saving' | 'error'
   const lastSavedAtRef = useRef(null);
 
@@ -58,6 +62,13 @@ function App() {
   const toastTimerRef = useRef(null);
 
   const api = useMemo(() => new NotesApi(), []);
+
+  /** Focus management refs */
+  const focusSearchRef = useRef(null);
+  const editorTitleRef = useRef(null);
+
+  /** Used to make save-state transitions race-safe across rapid edits / note switches. */
+  const saveAttemptSeqRef = useRef(0);
 
   useEffect(() => {
     document.documentElement.setAttribute("data-theme", theme);
@@ -139,24 +150,42 @@ function App() {
     return updateNoteTimestamps(updated);
   }, [selectedNote, draftTitle, draftBody, parsedDraftTags]);
 
+  const describeSyncFailure = useCallback((e) => {
+    if (!e || typeof e !== "object") return "Saved locally, but failed to sync to API.";
+    // notesApi normalizes errors into {kind,...}
+    if (e.kind === "timeout") return "Saved locally, but API sync timed out.";
+    if (e.kind === "http") return "Saved locally, but API returned an error.";
+    if (e.kind === "network") return "Saved locally, but API is unreachable.";
+    return "Saved locally, but failed to sync to API.";
+  }, []);
+
   const persistNoteUpdate = useCallback(
     async (noteToPersist) => {
       // Local update is immediate for responsiveness.
       setNotes((prev) => prev.map((n) => (n.id === noteToPersist.id ? noteToPersist : n)));
 
-      // Best-effort API persistence (non-blocking UX).
-      setSaveState("saving");
+      // Best-effort API persistence (non-blocking UX). Race-safe via sequence token.
+      const attemptSeq = ++saveAttemptSeqRef.current;
+
+      setSaveState((prev) => (prev === "dirty" || prev === "error" || prev === "saved" ? "saving" : prev));
+
       try {
         await api.upsertNote(noteToPersist);
-        setSaveState("saved");
-        lastSavedAtRef.current = new Date().toISOString();
+
+        // Only accept result if it's the latest attempted save (prevents stale resolution).
+        if (attemptSeq === saveAttemptSeqRef.current) {
+          setSaveState("saved");
+          lastSavedAtRef.current = new Date().toISOString();
+        }
       } catch (e) {
-        // Still saved locally; reflect API error only as indicator and toast.
-        setSaveState("error");
-        showToast("Saved locally, but failed to sync to API.", "warning");
+        if (attemptSeq === saveAttemptSeqRef.current) {
+          // Still saved locally; reflect API error only as indicator and toast.
+          setSaveState("error");
+          showToast(describeSyncFailure(e), "warning");
+        }
       }
     },
-    [api, setNotes, showToast]
+    [api, setNotes, showToast, describeSyncFailure]
   );
 
   // Autosave behavior: debounce draft changes.
@@ -182,24 +211,45 @@ function App() {
     setSelectedId(n.id);
     setSidebarOpen(true);
     showToast("New note created", "success");
-    // Best-effort API create
-    api.upsertNote(n).catch(() => {});
-  }, [api, setNotes, setSelectedId, showToast]);
+
+    // Focus the editor title once it renders.
+    window.setTimeout(() => {
+      if (editorTitleRef.current) editorTitleRef.current.focus();
+    }, 0);
+
+    // Best-effort API create; surface error non-intrusively.
+    api.upsertNote(n).catch((e) => {
+      showToast(describeSyncFailure(e), "warning");
+    });
+  }, [api, setNotes, setSelectedId, showToast, describeSyncFailure]);
 
   const deleteSelected = useCallback(() => {
     if (!selectedNote) return;
     const id = selectedNote.id;
 
-    setNotes((prev) => prev.filter((n) => n.id !== id));
-    setSelectedId((prevSelected) => {
-      if (prevSelected !== id) return prevSelected;
-      const remaining = notes.filter((n) => n.id !== id);
-      return remaining.length ? remaining[0].id : null;
-    });
+    // Figure out next selection from the current notes list BEFORE state updates.
+    const remaining = notes.filter((n) => n.id !== id);
+    const nextId = remaining.length ? remaining[0].id : null;
 
-    api.deleteNote(id).catch(() => {});
+    setNotes((prev) => prev.filter((n) => n.id !== id));
+    setSelectedId(nextId);
+
+    // After delete, keep the user in a productive place:
+    // - If a next note exists, focus editor title
+    // - Otherwise, focus search (so they can create/find)
+    window.setTimeout(() => {
+      if (nextId && editorTitleRef.current) {
+        editorTitleRef.current.focus();
+      } else if (focusSearchRef.current) {
+        focusSearchRef.current();
+      }
+    }, 0);
+
+    api.deleteNote(id).catch((e) => {
+      showToast(describeSyncFailure(e), "warning");
+    });
     showToast("Note deleted", "info");
-  }, [api, notes, selectedNote, setNotes, setSelectedId, showToast]);
+  }, [api, notes, selectedNote, setNotes, setSelectedId, showToast, describeSyncFailure]);
 
   const manualSave = useCallback(() => {
     if (!selectedNote) return;
@@ -208,8 +258,6 @@ function App() {
     persistNoteUpdate(updated);
     showToast("Saved", "success");
   }, [applyDraftToSelectedNote, persistNoteUpdate, selectedNote, showToast]);
-
-  const focusSearchRef = useRef(null);
 
   // Keyboard shortcuts: New (Cmd/Ctrl+N), Search (Cmd/Ctrl+K), Save (Cmd/Ctrl+S)
   useHotkeys(
@@ -280,6 +328,9 @@ function App() {
               onSave={manualSave}
               saveState={saveState}
               formatDateTime={formatDateTime}
+              registerTitleFocusRef={(el) => {
+                editorTitleRef.current = el;
+              }}
             />
           )}
         </main>

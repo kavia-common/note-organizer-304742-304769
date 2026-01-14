@@ -43,6 +43,7 @@ export function Sidebar({
             onChange={(e) => onQueryChange(e.target.value)}
             placeholder="Search notes…"
             aria-label="Search notes"
+            type="search"
           />
         </div>
 
@@ -53,6 +54,7 @@ export function Sidebar({
               className={`TagChip ${activeTag === t ? "TagChipActive" : ""}`}
               onClick={() => onActiveTagChange(t)}
               aria-label={t === "all" ? "Show all notes" : `Filter by tag ${t}`}
+              aria-pressed={activeTag === t}
             >
               {t === "all" ? "All" : t}
             </button>
@@ -60,9 +62,9 @@ export function Sidebar({
         </div>
       </div>
 
-      <div className="NotesList" role="list" aria-label="Notes list">
+      <div className="NotesList" role="listbox" aria-label="Notes list">
         {notes.length === 0 ? (
-          <div style={{ padding: 12, color: "var(--ocean-muted)", fontWeight: 600 }}>
+          <div style={{ padding: 12, color: "var(--ocean-muted)", fontWeight: 600 }} role="status" aria-live="polite">
             No notes match your filters.
           </div>
         ) : (
@@ -73,8 +75,9 @@ export function Sidebar({
                 key={n.id}
                 className={`NoteItem ${active ? "NoteItemActive" : ""}`}
                 onClick={() => onSelect(n.id)}
-                role="listitem"
-                aria-current={active ? "true" : "false"}
+                role="option"
+                aria-selected={active}
+                aria-label={`Open note ${n.title || "Untitled note"}`}
               >
                 <div className="NoteTitleRow">
                   <div className="NoteTitle">{n.title || "Untitled note"}</div>

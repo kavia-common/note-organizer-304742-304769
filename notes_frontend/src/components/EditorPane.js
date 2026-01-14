@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useRef } from "react";
 
 // PUBLIC_INTERFACE
 export function EditorPane({
@@ -13,8 +13,18 @@ export function EditorPane({
   onSave,
   saveState,
   formatDateTime,
+  registerTitleFocusRef,
 }) {
   /** Note editor view with autosave indicator and manual save action. */
+  const titleInputRef = useRef(null);
+
+  useEffect(() => {
+    if (!registerTitleFocusRef) return;
+    registerTitleFocusRef(titleInputRef.current);
+    // We intentionally do not "cleanup" by nulling; App overwrites on next render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [registerTitleFocusRef]);
+
   const saveHint =
     saveState === "dirty"
       ? "Autosaving…"
@@ -36,7 +46,7 @@ export function EditorPane({
             </span>
           </div>
 
-          <div className="EditorActions">
+          <div className="EditorActions" aria-label="Editor actions">
             <button className="Button" onClick={onSave} aria-label="Save note">
               Save <span className="Kbd">Ctrl/Cmd+S</span>
             </button>
@@ -47,7 +57,7 @@ export function EditorPane({
         </div>
 
         <div className="FooterHint" aria-label="Save hint and shortcuts">
-          <span>{saveHint}</span>
+          <span aria-live="polite">{saveHint}</span>
           <span>
             Search <span className="Kbd">Ctrl/Cmd+K</span> · New <span className="Kbd">Ctrl/Cmd+N</span>
           </span>
@@ -56,6 +66,7 @@ export function EditorPane({
 
       <div className="EditorBody">
         <input
+          ref={titleInputRef}
           className="Input TitleInput"
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
