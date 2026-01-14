@@ -1,104 +1,532 @@
-/* CSS Variables for Theme Management */
+/* Ocean Professional Theme (Blue & Amber accents) */
 :root {
-  /* Light theme colors */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --text-primary: #282c34;
-  --text-secondary: #61dafb;
-  --border-color: #e9ecef;
-  --button-bg: #007bff;
-  --button-text: #ffffff;
+  --ocean-primary: #2563eb; /* blue */
+  --ocean-secondary: #f59e0b; /* amber */
+  --ocean-bg: #f9fafb;
+  --ocean-surface: #ffffff;
+  --ocean-text: #111827;
+  --ocean-muted: #6b7280;
+  --ocean-border: rgba(17, 24, 39, 0.08);
+  --ocean-shadow: 0 10px 25px rgba(17, 24, 39, 0.08);
+  --ocean-shadow-sm: 0 6px 14px rgba(17, 24, 39, 0.08);
+  --ocean-focus: 0 0 0 3px rgba(37, 99, 235, 0.25);
+
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+
+  --header-h: 64px;
+
+  --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New",
+    monospace;
 }
 
 [data-theme="dark"] {
-  /* Dark theme colors */
-  --bg-primary: #1a1a1a;
-  --bg-secondary: #282c34;
-  --text-primary: #ffffff;
-  --text-secondary: #61dafb;
-  --border-color: #404040;
-  --button-bg: #0056b3;
-  --button-text: #ffffff;
+  --ocean-bg: #0b1220;
+  --ocean-surface: #0f1a2b;
+  --ocean-text: #e5e7eb;
+  --ocean-muted: rgba(229, 231, 235, 0.65);
+  --ocean-border: rgba(229, 231, 235, 0.08);
+  --ocean-shadow: 0 18px 35px rgba(0, 0, 0, 0.35);
+  --ocean-shadow-sm: 0 10px 22px rgba(0, 0, 0, 0.35);
+  --ocean-focus: 0 0 0 3px rgba(245, 158, 11, 0.22);
+}
+
+* {
+  box-sizing: border-box;
 }
 
 .App {
-  text-align: center;
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
   min-height: 100vh;
-  transition: background-color 0.3s ease, color 0.3s ease;
+  background: radial-gradient(
+      900px 400px at 20% 0%,
+      rgba(37, 99, 235, 0.12),
+      transparent 60%
+    ),
+    radial-gradient(900px 500px at 90% 10%, rgba(245, 158, 11, 0.12), transparent 55%),
+    var(--ocean-bg);
+  color: var(--ocean-text);
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 
-.App-logo {
-  height: 40vmin;
-  pointer-events: none;
+/* --- App shell layout --- */
+.AppShell {
+  height: calc(100vh - var(--header-h));
+  display: grid;
+  grid-template-columns: 360px 1fr;
+  gap: 14px;
+  padding: 14px;
+  align-items: stretch;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .App-logo {
-    animation: App-logo-spin infinite 20s linear;
+@media (max-width: 980px) {
+  .AppShell {
+    grid-template-columns: 1fr;
   }
 }
 
-.App-header {
-  background-color: var(--bg-secondary);
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  font-size: calc(10px + 2vmin);
-  color: var(--text-primary);
-  transition: background-color 0.3s ease;
-  position: relative;
+.Panel {
+  background: var(--ocean-surface);
+  border: 1px solid var(--ocean-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--ocean-shadow-sm);
+  overflow: hidden;
 }
 
-.App-link {
-  color: var(--text-secondary);
-  transition: color 0.3s ease;
+.MainPane {
+  min-height: 0;
 }
 
-.theme-toggle {
-  position: absolute;
-  top: 20px;
-  right: 20px;
-  background-color: var(--button-bg);
-  color: var(--button-text);
-  border: none;
-  border-radius: 8px;
-  padding: 10px 20px;
-  font-size: 14px;
+/* --- Buttons & inputs --- */
+.Button {
+  appearance: none;
+  border: 1px solid var(--ocean-border);
+  background: rgba(255, 255, 255, 0.65);
+  color: var(--ocean-text);
+  padding: 10px 12px;
+  border-radius: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  transition: transform 0.06s ease, background 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
-.theme-toggle:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
-  opacity: 0.9;
+[data-theme="dark"] .Button {
+  background: rgba(15, 26, 43, 0.75);
 }
 
-.theme-toggle:active {
-  transform: translateY(0);
+.Button:hover {
+  border-color: rgba(37, 99, 235, 0.3);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.08);
 }
 
-@keyframes App-logo-spin {
-  from {
-    transform: rotate(0deg);
+.Button:active {
+  transform: translateY(1px);
+}
+
+.Button:focus-visible {
+  outline: none;
+  box-shadow: var(--ocean-focus);
+}
+
+.ButtonPrimary {
+  border-color: rgba(37, 99, 235, 0.25);
+  background: linear-gradient(180deg, rgba(37, 99, 235, 0.95), rgba(37, 99, 235, 0.78));
+  color: white;
+}
+
+.ButtonDanger {
+  border-color: rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.10);
+  color: var(--ocean-text);
+}
+
+.Input {
+  width: 100%;
+  border: 1px solid var(--ocean-border);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ocean-text);
+  border-radius: 12px;
+  padding: 10px 12px;
+  outline: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease, background 0.15s ease;
+}
+
+[data-theme="dark"] .Input {
+  background: rgba(15, 26, 43, 0.65);
+}
+
+.Input:focus {
+  border-color: rgba(37, 99, 235, 0.35);
+  box-shadow: var(--ocean-focus);
+}
+
+.Kbd {
+  font-family: var(--mono);
+  font-size: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--ocean-border);
+  border-radius: 8px;
+  color: var(--ocean-muted);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+[data-theme="dark"] .Kbd {
+  background: rgba(15, 26, 43, 0.65);
+}
+
+/* --- Header --- */
+.TopBar {
+  height: var(--header-h);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  border-bottom: 1px solid var(--ocean-border);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.8),
+    rgba(255, 255, 255, 0.55)
+  );
+  backdrop-filter: blur(10px);
+}
+
+[data-theme="dark"] .TopBar {
+  background: linear-gradient(180deg, rgba(15, 26, 43, 0.82), rgba(15, 26, 43, 0.62));
+}
+
+.TopBarLeft {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 240px;
+}
+
+.BrandMark {
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: radial-gradient(
+      18px 18px at 30% 30%,
+      rgba(245, 158, 11, 0.95),
+      rgba(245, 158, 11, 0.25) 60%,
+      transparent 70%
+    ),
+    radial-gradient(
+      24px 24px at 70% 70%,
+      rgba(37, 99, 235, 0.95),
+      rgba(37, 99, 235, 0.25) 60%,
+      transparent 70%
+    ),
+    rgba(17, 24, 39, 0.06);
+  border: 1px solid var(--ocean-border);
+  box-shadow: 0 10px 24px rgba(17, 24, 39, 0.08);
+}
+
+.TitleBlock {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.1;
+}
+
+.AppTitle {
+  font-size: 16px;
+  margin: 0;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.AppSubtitle {
+  margin: 0;
+  font-size: 12px;
+  color: var(--ocean-muted);
+}
+
+.TopBarActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.SavePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--ocean-border);
+  background: rgba(255, 255, 255, 0.6);
+  color: var(--ocean-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+[data-theme="dark"] .SavePill {
+  background: rgba(15, 26, 43, 0.7);
+}
+
+.SaveDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--ocean-muted);
+}
+
+.SaveDotDirty {
+  background: var(--ocean-secondary);
+}
+
+.SaveDotSaving {
+  background: var(--ocean-primary);
+  animation: pulse 1s ease-in-out infinite;
+}
+
+.SaveDotError {
+  background: #ef4444;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+    transform: scale(0.95);
   }
-  to {
-    transform: rotate(360deg);
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
   }
 }
 
-/* Responsive design for mobile */
-@media (max-width: 768px) {
-  .theme-toggle {
-    top: 10px;
-    right: 10px;
-    padding: 8px 16px;
-    font-size: 12px;
-  }
+/* --- Sidebar --- */
+.Sidebar {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.SidebarHeader {
+  padding: 12px 12px 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border-bottom: 1px solid var(--ocean-border);
+}
+
+.SidebarRow {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.TagChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.TagChip {
+  border: 1px solid var(--ocean-border);
+  background: rgba(255, 255, 255, 0.6);
+  padding: 6px 10px;
+  border-radius: 999px;
+  color: var(--ocean-muted);
+  font-weight: 600;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+[data-theme="dark"] .TagChip {
+  background: rgba(15, 26, 43, 0.65);
+}
+
+.TagChipActive {
+  border-color: rgba(37, 99, 235, 0.35);
+  color: var(--ocean-text);
+  background: rgba(37, 99, 235, 0.10);
+}
+
+.NotesList {
+  padding: 8px;
+  overflow: auto;
+  min-height: 0;
+}
+
+.NoteItem {
+  width: 100%;
+  text-align: left;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: 14px;
+  padding: 12px 12px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.NoteItem:hover {
+  background: rgba(37, 99, 235, 0.06);
+  border-color: rgba(37, 99, 235, 0.08);
+}
+
+.NoteItemActive {
+  background: rgba(37, 99, 235, 0.10);
+  border-color: rgba(37, 99, 235, 0.18);
+}
+
+.NoteTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.NoteTitle {
+  font-weight: 800;
+  color: var(--ocean-text);
+  font-size: 14px;
+  letter-spacing: -0.01em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.NoteMeta {
+  font-size: 11px;
+  color: var(--ocean-muted);
+  white-space: nowrap;
+}
+
+.NotePreview {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--ocean-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* --- Editor --- */
+.Editor {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.EditorHeader {
+  padding: 14px 14px 12px 14px;
+  border-bottom: 1px solid var(--ocean-border);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.EditorHeaderTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.EditorMeta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 12px;
+  color: var(--ocean-muted);
+}
+
+.EditorMetaCode {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ocean-muted);
+}
+
+.EditorActions {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.EditorBody {
+  padding: 14px;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  gap: 10px;
+  min-height: 0;
+}
+
+.TitleInput {
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.Textarea {
+  width: 100%;
+  min-height: 0;
+  resize: none;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell,
+    Noto Sans, sans-serif;
+  line-height: 1.5;
+}
+
+.FooterHint {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--ocean-muted);
+  font-size: 12px;
+}
+
+/* --- Empty state --- */
+.EmptyState {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.EmptyCard {
+  max-width: 520px;
+  width: 100%;
+  border: 1px solid var(--ocean-border);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.65)
+  );
+  border-radius: var(--radius-lg);
+  box-shadow: var(--ocean-shadow);
+  padding: 18px;
+}
+
+[data-theme="dark"] .EmptyCard {
+  background: linear-gradient(180deg, rgba(15, 26, 43, 0.9), rgba(15, 26, 43, 0.65));
+}
+
+.EmptyTitle {
+  margin: 0 0 6px 0;
+  font-size: 18px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.EmptyDesc {
+  margin: 0 0 14px 0;
+  color: var(--ocean-muted);
+}
+
+/* --- Toast --- */
+.Toast {
+  position: fixed;
+  bottom: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--ocean-border);
+  background: rgba(255, 255, 255, 0.75);
+  box-shadow: var(--ocean-shadow-sm);
+  color: var(--ocean-text);
+  font-weight: 700;
+  backdrop-filter: blur(10px);
+  max-width: min(720px, calc(100vw - 20px));
+}
+
+[data-theme="dark"] .Toast {
+  background: rgba(15, 26, 43, 0.80);
+}
+
+.ToastInfo {
+  border-color: rgba(37, 99, 235, 0.25);
+}
+
+.ToastSuccess {
+  border-color: rgba(245, 158, 11, 0.25);
+}
+
+.ToastWarning {
+  border-color: rgba(239, 68, 68, 0.25);
 }
