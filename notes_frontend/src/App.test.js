@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen, within, act } from "@testing-library/react";
+import { render, screen, within, act, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "./App";
 
@@ -69,12 +69,11 @@ describe("Ocean Notes - core flows", () => {
     // Newly created note is prepended and selected
     expect(afterOptions[0]).toHaveAttribute("aria-selected", "true");
 
-    // Editor title should be focused (App focuses title after creation via setTimeout 0)
-    // Allow that 0ms timer to run.
-    await act(async () => {
-      jest.advanceTimersByTime(0);
+    // Editor title should be focused (App focuses title after creation via setTimeout 0).
+    // Instead of relying on fake timers, wait for focus to land.
+    await waitFor(() => {
+      expect(screen.getByLabelText(/note title/i)).toHaveFocus();
     });
-    expect(screen.getByLabelText(/note title/i)).toHaveFocus();
   });
 
   test("Editing title/body triggers autosave state transitions (Unsaved -> Saving -> Saved) with debounce", async () => {
@@ -115,7 +114,11 @@ describe("Ocean Notes - core flows", () => {
     // We accept either an intermediate "Saving…" flash or directly "Saved" depending on scheduling,
     // but final state must be Saved.
     expect(screen.getByLabelText(/save state:/i)).toHaveTextContent(/saved/i);
-    expect(screen.getByLabelText(/save hint and shortcuts/i)).toHaveTextContent(/^saved$/i);
+
+    // Scope to the aria-live hint only; the region also contains shortcut help text.
+    const footerHint = screen.getByLabelText(/save hint and shortcuts/i);
+    const liveHint = within(footerHint).getByText(/^saved$/i, { selector: "span[aria-live='polite']" });
+    expect(liveHint).toBeInTheDocument();
   });
 
   test("Search input filters the note list (debounced)", async () => {
@@ -249,7 +252,9 @@ describe("Ocean Notes - core flows", () => {
     });
 
     expect(preventDefault).toHaveBeenCalled();
-    expect(screen.getByText(/^saved$/i)).toBeInTheDocument();
+
+    // "Saved" is shown in both the header pill and the toast; assert against the toast explicitly.
+    expect(screen.getByRole("status")).toHaveTextContent(/^saved$/i);
 
     // After manual save, app indicates saved eventually. In local-only mode it should settle quickly.
     await act(async () => {
