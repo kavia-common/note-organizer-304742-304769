@@ -8,6 +8,12 @@ export function Header({
   lastSavedAt,
   onNewNote,
   onToggleSidebar,
+  onDuplicateNote,
+  onExportMarkdown,
+  onClearSearch,
+  canDuplicate = true,
+  canExport = true,
+  canClearSearch = true,
   shortcutHelp,
 }) {
   /** Top application header. */
@@ -48,6 +54,36 @@ export function Header({
 
         <button className="Button" onClick={onToggleSidebar} aria-label="Toggle sidebar">
           Sidebar
+        </button>
+
+        <button
+          className="Button"
+          onClick={onClearSearch}
+          aria-label="Clear search"
+          disabled={!canClearSearch}
+          title="Clear search and filters"
+        >
+          Clear
+        </button>
+
+        <button
+          className="Button"
+          onClick={onDuplicateNote}
+          aria-label="Duplicate note"
+          disabled={!canDuplicate}
+          title="Duplicate current note"
+        >
+          Duplicate
+        </button>
+
+        <button
+          className="Button"
+          onClick={onExportMarkdown}
+          aria-label="Export note to Markdown"
+          disabled={!canExport}
+          title="Download as .md"
+        >
+          Export
         </button>
 
         <button className="Button ButtonPrimary" onClick={onNewNote} aria-label="Create new note">

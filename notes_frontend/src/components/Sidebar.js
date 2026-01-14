@@ -1,5 +1,31 @@
 import React, { useEffect, useMemo, useRef } from "react";
-import { formatDateTime, getNotePreview } from "../utils/notes";
+import { formatDateTime, getNotePreview, toHighlightedSegments } from "../utils/notes";
+
+function HighlightedText({ text, query }) {
+  const segments = useMemo(() => toHighlightedSegments(text, query), [text, query]);
+
+  return (
+    <>
+      {segments.map((seg, idx) =>
+        seg.highlight ? (
+          <mark
+            key={idx}
+            style={{
+              background: "rgba(245, 158, 11, 0.22)",
+              color: "inherit",
+              padding: "0 2px",
+              borderRadius: 4,
+            }}
+          >
+            {seg.text}
+          </mark>
+        ) : (
+          <React.Fragment key={idx}>{seg.text}</React.Fragment>
+        )
+      )}
+    </>
+  );
+}
 
 // PUBLIC_INTERFACE
 export function Sidebar({
@@ -13,6 +39,7 @@ export function Sidebar({
   query,
   onQueryChange,
   registerSearchFocus,
+  highlightQuery = "",
 }) {
   /** Sidebar list of notes with search and tag filters. */
   const searchRef = useRef(null);
@@ -41,7 +68,7 @@ export function Sidebar({
             className="Input"
             value={query}
             onChange={(e) => onQueryChange(e.target.value)}
-            placeholder="Search notes…"
+            placeholder='Search notes… (try tag:work)'
             aria-label="Search notes"
             type="search"
           />
@@ -70,6 +97,9 @@ export function Sidebar({
         ) : (
           notes.map((n) => {
             const active = n.id === selectedId;
+            const title = n.title || "Untitled note";
+            const preview = getNotePreview(n);
+
             return (
               <button
                 key={n.id}
@@ -77,13 +107,17 @@ export function Sidebar({
                 onClick={() => onSelect(n.id)}
                 role="option"
                 aria-selected={active}
-                aria-label={`Open note ${n.title || "Untitled note"}`}
+                aria-label={`Open note ${title}`}
               >
                 <div className="NoteTitleRow">
-                  <div className="NoteTitle">{n.title || "Untitled note"}</div>
+                  <div className="NoteTitle">
+                    <HighlightedText text={title} query={highlightQuery} />
+                  </div>
                   <div className="NoteMeta">{formatDateTime(n.updatedAt || n.createdAt)}</div>
                 </div>
-                <div className="NotePreview">{getNotePreview(n)}</div>
+                <div className="NotePreview">
+                  <HighlightedText text={preview} query={highlightQuery} />
+                </div>
               </button>
             );
           })

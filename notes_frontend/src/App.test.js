@@ -121,7 +121,7 @@ describe("Ocean Notes - core flows", () => {
     expect(liveHint).toBeInTheDocument();
   });
 
-  test("Search input filters the note list (debounced)", async () => {
+  test("Search input filters the note list (debounced) and supports tag:xyz syntax", async () => {
     jest.useFakeTimers();
     const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
 
@@ -158,9 +158,21 @@ describe("Ocean Notes - core flows", () => {
       jest.advanceTimersByTime(150);
     });
 
-    const options = within(listbox).getAllByRole("option");
+    let options = within(listbox).getAllByRole("option");
     expect(options).toHaveLength(1);
     expect(options[0]).toHaveAccessibleName(/open note grocery list/i);
+
+    // tag: syntax should match by tag even if title/body don't contain it.
+    await user.clear(search);
+    await user.type(search, "tag:work");
+
+    await act(async () => {
+      jest.advanceTimersByTime(150);
+    });
+
+    options = within(listbox).getAllByRole("option");
+    expect(options).toHaveLength(1);
+    expect(options[0]).toHaveAccessibleName(/open note work plan/i);
   });
 
   test("Tag filter behavior filters notes by tag", async () => {
@@ -209,6 +221,57 @@ describe("Ocean Notes - core flows", () => {
     // Back to all
     await user.click(screen.getByRole("button", { name: /show all notes/i }));
     expect(within(listbox).getAllByRole("option")).toHaveLength(3);
+  });
+
+  test("Header quick action: Clear search resets query and tag filters", async () => {
+    jest.useFakeTimers();
+    const user = userEvent.setup({ advanceTimers: jest.advanceTimersByTime });
+
+    const notes = [
+      {
+        id: "n1",
+        title: "One",
+        body: "alpha",
+        tags: ["work"],
+        createdAt: "2025-01-01T10:00:00.000Z",
+        updatedAt: "2025-01-01T10:00:00.000Z",
+      },
+      {
+        id: "n2",
+        title: "Two",
+        body: "beta",
+        tags: ["personal"],
+        createdAt: "2025-01-01T09:00:00.000Z",
+        updatedAt: "2025-01-01T09:00:00.000Z",
+      },
+    ];
+    seedLocalStorageNotes(notes, "n1");
+
+    render(<App />);
+
+    const search = screen.getByRole("searchbox", { name: /search notes/i });
+    const listbox = screen.getByRole("listbox", { name: /notes list/i });
+
+    await user.type(search, "alpha");
+    await act(async () => {
+      jest.advanceTimersByTime(150);
+    });
+    expect(within(listbox).getAllByRole("option")).toHaveLength(1);
+
+    // Also set an active tag filter
+    await user.click(screen.getByRole("button", { name: /filter by tag work/i }));
+    expect(within(listbox).getAllByRole("option")).toHaveLength(1);
+
+    // Clear from header should reset both query + activeTag ("all")
+    await user.click(screen.getByRole("button", { name: /clear search/i }));
+
+    // Debounced search should settle
+    await act(async () => {
+      jest.advanceTimersByTime(150);
+    });
+
+    expect(search).toHaveValue("");
+    expect(within(listbox).getAllByRole("option")).toHaveLength(2);
   });
 
   test("Keyboard shortcuts: Cmd/Ctrl+N creates note, Cmd/Ctrl+K focuses search, Cmd/Ctrl+S triggers save without navigation", async () => {

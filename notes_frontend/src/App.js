@@ -9,6 +9,7 @@ import {
   filterNotes,
   formatDateTime,
   getNotePreview,
+  parseSearchQuery,
   sortNotesByUpdatedAtDesc,
   updateNoteTimestamps,
 } from "./utils/notes";
@@ -115,6 +116,8 @@ function App() {
     // Unique tags, preserve order
     return Array.from(new Set(raw));
   }, [draftTagsText]);
+
+  const parsedQuery = useMemo(() => parseSearchQuery(debouncedQuery), [debouncedQuery]);
 
   const visibleNotes = useMemo(() => {
     const filtered = filterNotes(notes, debouncedQuery, activeTag);
@@ -223,6 +226,72 @@ function App() {
     });
   }, [api, setNotes, setSelectedId, showToast, describeSyncFailure]);
 
+  const clearSearch = useCallback(() => {
+    setQuery("");
+    setActiveTag("all");
+    showToast("Search cleared", "info");
+    window.setTimeout(() => {
+      if (focusSearchRef.current) focusSearchRef.current();
+    }, 0);
+  }, [setActiveTag, showToast]);
+
+  const duplicateSelected = useCallback(() => {
+    if (!selectedNote) return;
+
+    // Duplicate from the current draft (what the user sees), not last-saved note.
+    const base = applyDraftToSelectedNote() || selectedNote;
+    const n = updateNoteTimestamps({
+      ...createEmptyNote(),
+      title: `${(base.title || "Untitled note").trim()} (copy)`,
+      body: base.body || "",
+      tags: base.tags || [],
+      // preserve createdAt from createEmptyNote; updatedAt will be set by updateNoteTimestamps above
+    });
+
+    setNotes((prev) => [n, ...prev]);
+    setSelectedId(n.id);
+    setSidebarOpen(true);
+    showToast("Note duplicated", "success");
+
+    api.upsertNote(n).catch((e) => {
+      showToast(describeSyncFailure(e), "warning");
+    });
+  }, [api, applyDraftToSelectedNote, describeSyncFailure, selectedNote, setNotes, setSelectedId, showToast]);
+
+  const exportSelectedToMarkdown = useCallback(() => {
+    if (!selectedNote) return;
+
+    const base = applyDraftToSelectedNote() || selectedNote;
+    const title = (base.title || "Untitled note").trim();
+    const tags = base.tags || [];
+    const body = base.body || "";
+
+    const md = [
+      `# ${title}`,
+      "",
+      tags.length ? `**Tags:** ${tags.map((t) => `\`${t}\``).join(", ")}` : null,
+      tags.length ? "" : null,
+      body,
+      "",
+    ]
+      .filter((x) => x !== null)
+      .join("\n");
+
+    // Create a download without needing backend support.
+    const blob = new Blob([md], { type: "text/markdown;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const safeName = title.replace(/[^\w\- ]+/g, "").trim().replace(/\s+/g, "-").slice(0, 64) || "note";
+    a.href = url;
+    a.download = `${safeName}.md`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    showToast("Exported Markdown", "success");
+  }, [applyDraftToSelectedNote, selectedNote, showToast]);
+
   const deleteSelected = useCallback(() => {
     if (!selectedNote) return;
     const id = selectedNote.id;
@@ -285,6 +354,12 @@ function App() {
         lastSavedAt={lastSavedAtRef.current}
         onNewNote={createNote}
         onToggleSidebar={() => setSidebarOpen((v) => !v)}
+        onDuplicateNote={duplicateSelected}
+        onExportMarkdown={exportSelectedToMarkdown}
+        onClearSearch={clearSearch}
+        canDuplicate={Boolean(selectedNote)}
+        canExport={Boolean(selectedNote)}
+        canClearSearch={Boolean(query) || activeTag !== "all"}
         shortcutHelp={shortcutHelp}
       />
 
@@ -300,6 +375,7 @@ function App() {
           query={query}
           onQueryChange={setQuery}
           registerSearchFocus={(fn) => (focusSearchRef.current = fn)}
+          highlightQuery={parsedQuery.text}
         />
 
         <main className="MainPane" aria-label="Editor pane">
